@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.database import engine
 from app.middleware.org_scope import OrgScopeMiddleware
-from app.routers import approvals, audit, runs, tools, workflows
+from app.routers import approvals, audit, knowledge, kpi, runs, tools, webhooks, workflows
 
 logger = structlog.get_logger(__name__)
 
@@ -144,6 +144,9 @@ def create_app() -> FastAPI:
     app.include_router(approvals.router, prefix="/v1")
     app.include_router(audit.router, prefix="/v1")
     app.include_router(tools.router, prefix="/v1")
+    app.include_router(knowledge.router, prefix="/v1")
+    app.include_router(kpi.router, prefix="/v1")
+    app.include_router(webhooks.router, prefix="/v1")
 
     # ── Error Handlers ───────────────────────────────────────────────
 
