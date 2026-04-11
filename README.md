@@ -18,9 +18,9 @@ A production-grade governed multi-agent runtime platform. Not a chatbot. Not an 
 
 ## What's Built
 
-| Part | Description | Status |
-|------|-------------|--------|
-| **0** | Multi-provider AI model router (9 providers, 4 routing modes) 
+| Part | Description 
+|------|-------------
+| **0** | Multi-provider AI model router (9 providers, 4 routing modes)  
 | **1** | Orchestration engine — plan/act/observe loop, loop detection 
 | **2** | Go governance proxy — scope, PII, injection, audit, rate limits 
 | **3** | 41 tool connectors with registry and semantic search 
