@@ -276,7 +276,4 @@ MIT
 
 ---
 
-<p align="center">
-  Built to eliminate $2M consulting engagements in 30 days.<br/>
-  Every line of code reflects that.
-</p>
+
