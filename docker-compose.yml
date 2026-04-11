@@ -1,0 +1,147 @@
+services:
+  # ─── Data Layer ─────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: agent_os
+      POSTGRES_USER: agent_os
+      POSTGRES_PASSWORD: agent_os_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./packages/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_os"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  nats:
+    image: nats:2-alpine
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: -js -m 8222
+    healthcheck:
+      test: ["CMD", "nats-server", "--help"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.0
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  vault:
+    image: hashicorp/vault:1.18
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    command: vault server -dev -dev-root-token-id=root
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8200/v1/sys/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  # ─── Application Services ──────────────────────────
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://agent_os:agent_os_dev@postgres:5432/agent_os
+      REDIS_URL: redis://redis:6379/0
+      NATS_URL: nats://nats:4222
+      QDRANT_URL: http://qdrant:6333
+      GOVERNANCE_PROXY_URL: http://governance-proxy:8090
+      VAULT_ADDR: http://vault:8200
+      ENVIRONMENT: development
+      MODEL_ROUTING_MODE: ${MODEL_ROUTING_MODE:-hybrid}
+      MODEL_FALLBACK_PROVIDER: ${MODEL_FALLBACK_PROVIDER:-ollama}
+      MODEL_PLANNER_PROVIDER: ${MODEL_PLANNER_PROVIDER:-gemini}
+      MODEL_WORKER_PROVIDER: ${MODEL_WORKER_PROVIDER:-gemini}
+      MODEL_CLASSIFIER_PROVIDER: ${MODEL_CLASSIFIER_PROVIDER:-gemini}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-dev-key}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-dev-encryption-key}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      vault:
+        condition: service_healthy
+
+  governance-proxy:
+    build:
+      context: ./apps/worker/governance
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      GOVERNANCE_PROXY_ADDR: ":8090"
+      DATABASE_URL: postgres://agent_os:agent_os_dev@postgres:5432/agent_os
+      REDIS_URL: redis://redis:6379/1
+      VAULT_ADDR: http://vault:8200
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  ollama_data:

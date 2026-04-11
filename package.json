@@ -1,0 +1,22 @@
+{
+  "name": "enterprise-agent-os",
+  "private": true,
+  "scripts": {
+    "dev": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo dev",
+    "build": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo build",
+    "lint": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo lint",
+    "type-check": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo type-check",
+    "test": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo test",
+    "verify": "corepack pnpm -r build && corepack pnpm -r type-check",
+    "db:migrate": "cd apps/api && py -m alembic upgrade head",
+    "db:generate": "cd apps/api && py -m alembic revision --autogenerate"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.5.0"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
