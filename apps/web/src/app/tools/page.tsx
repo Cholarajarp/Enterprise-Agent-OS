@@ -5,142 +5,14 @@ import { AppShell } from '@/components/layout/AppShell';
 import { StatusDot } from '@/components/common/StatusDot';
 import { cn, formatCost } from '@/lib/utils';
 import { Plus, Search, Clock, RotateCcw, Shield } from 'lucide-react';
-
-type ToolHealth = 'running' | 'completed' | 'failed';
-
-interface Tool {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  health: ToolHealth;
-  healthLabel: string;
-  scopes: string[];
-  costPerCall: number;
-  timeoutMs: number;
-  retryPolicy: string;
-  callsToday: number;
-}
-
-const MOCK_TOOLS: Tool[] = [
-  {
-    id: 'tool-001',
-    name: 'jira:cloud',
-    version: '2.4.1',
-    description:
-      'Create, update, search, and transition Jira issues. Supports custom fields, JQL queries, and bulk operations.',
-    health: 'completed',
-    healthLabel: 'Healthy',
-    scopes: ['issues:read', 'issues:write', 'projects:read'],
-    costPerCall: 0.0003,
-    timeoutMs: 15000,
-    retryPolicy: '3x exponential',
-    callsToday: 847,
-  },
-  {
-    id: 'tool-002',
-    name: 'pagerduty:v2',
-    version: '1.8.0',
-    description:
-      'Manage PagerDuty incidents, services, and on-call schedules. Trigger, acknowledge, and resolve incidents programmatically.',
-    health: 'completed',
-    healthLabel: 'Healthy',
-    scopes: ['incidents:read', 'incidents:write', 'services:read'],
-    costPerCall: 0.0005,
-    timeoutMs: 10000,
-    retryPolicy: '3x exponential',
-    callsToday: 234,
-  },
-  {
-    id: 'tool-003',
-    name: 'slack:web-api',
-    version: '3.1.2',
-    description:
-      'Send messages, create channels, manage threads, and post rich block kit messages to Slack workspaces.',
-    health: 'completed',
-    healthLabel: 'Healthy',
-    scopes: ['chat:write', 'channels:read', 'users:read'],
-    costPerCall: 0.0001,
-    timeoutMs: 8000,
-    retryPolicy: '2x linear',
-    callsToday: 1523,
-  },
-  {
-    id: 'tool-004',
-    name: 'datadog:api',
-    version: '2.0.3',
-    description:
-      'Query metrics, create monitors, search logs, and manage dashboards via Datadog API. Supports custom metric queries.',
-    health: 'completed',
-    healthLabel: 'Healthy',
-    scopes: ['metrics:read', 'monitors:write', 'logs:read'],
-    costPerCall: 0.0008,
-    timeoutMs: 20000,
-    retryPolicy: '3x exponential',
-    callsToday: 412,
-  },
-  {
-    id: 'tool-005',
-    name: 'github:rest',
-    version: '4.2.0',
-    description:
-      'Interact with GitHub repositories, pull requests, issues, actions, and deployments. Supports both REST and GraphQL.',
-    health: 'running',
-    healthLabel: 'Degraded',
-    scopes: ['repo:read', 'repo:write', 'actions:read', 'deployments:write'],
-    costPerCall: 0.0004,
-    timeoutMs: 12000,
-    retryPolicy: '3x exponential',
-    callsToday: 678,
-  },
-  {
-    id: 'tool-006',
-    name: 'kubernetes:api',
-    version: '1.5.1',
-    description:
-      'Manage Kubernetes resources including deployments, pods, services, and config maps. Supports rollbacks and scaling.',
-    health: 'completed',
-    healthLabel: 'Healthy',
-    scopes: ['deployments:read', 'deployments:write', 'pods:read', 'pods:exec'],
-    costPerCall: 0.0012,
-    timeoutMs: 30000,
-    retryPolicy: '2x exponential',
-    callsToday: 156,
-  },
-  {
-    id: 'tool-007',
-    name: 'postgresql:query',
-    version: '1.2.0',
-    description:
-      'Execute read-only SQL queries against PostgreSQL databases. Supports parameterized queries and result pagination.',
-    health: 'failed',
-    healthLabel: 'Unreachable',
-    scopes: ['db:read'],
-    costPerCall: 0.0002,
-    timeoutMs: 10000,
-    retryPolicy: '3x exponential',
-    callsToday: 0,
-  },
-  {
-    id: 'tool-008',
-    name: 'http:generic',
-    version: '1.0.0',
-    description:
-      'Make arbitrary HTTP requests to allowlisted endpoints. Supports GET, POST, PUT, PATCH, DELETE with custom headers and body.',
-    health: 'completed',
-    healthLabel: 'Healthy',
-    scopes: ['http:request'],
-    costPerCall: 0.0001,
-    timeoutMs: 15000,
-    retryPolicy: '2x linear',
-    callsToday: 2341,
-  },
-];
+import { useTools } from '@/lib/hooks';
+import type { Tool } from '@/lib/hooks';
 
 export default function ToolsPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { tools, loading, error } = useTools();
 
-  const filteredTools = MOCK_TOOLS.filter(
+  const filteredTools = tools.filter(
     (tool) =>
       tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tool.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -177,7 +49,20 @@ export default function ToolsPage() {
         />
       </div>
 
+      {/* Loading state */}
+      {loading && (
+        <div className="text-sm text-txt-3 py-12 text-center">Loading tools...</div>
+      )}
+
+      {/* Error state — graceful */}
+      {error && !loading && tools.length === 0 && (
+        <div className="text-sm text-txt-3 py-12 text-center">
+          Unable to load tools. Check that the API is running.
+        </div>
+      )}
+
       {/* Tool grid */}
+      {!loading && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredTools.map((tool) => (
           <div
@@ -256,6 +141,7 @@ export default function ToolsPage() {
           </div>
         ))}
       </div>
+      )}
     </AppShell>
   );
 }

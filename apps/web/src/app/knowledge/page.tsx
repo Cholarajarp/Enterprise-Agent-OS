@@ -1,5 +1,9 @@
 'use client';
 
+// TODO: Wire to knowledge API (GET /knowledge/sources, GET /knowledge/jobs, GET /knowledge/kpi)
+// when the backend endpoints are available. Currently using static data as the knowledge API
+// schema has not been finalized.
+
 import { AppShell } from '@/components/layout/AppShell';
 import { KPICard } from '@/components/common/KPICard';
 import { cn, formatRelativeTime } from '@/lib/utils';

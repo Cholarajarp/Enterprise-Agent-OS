@@ -6,8 +6,8 @@ import { StatusDot } from '@/components/common/StatusDot';
 import { useRunDrawerStore } from '@/stores/ui';
 import { ExternalLink, MoreHorizontal, RotateCcw, X as XIcon } from 'lucide-react';
 
-// Demo data — replaced by TanStack Query in production
-const MOCK_RUNS = [
+// Fallback demo data — used when no runs are provided (e.g. API unreachable)
+const FALLBACK_RUNS = [
   { id: '01968f2a-3b4c-7def-8901-234567890abc', workflow: 'IT Incident Triage', status: 'running', trigger: 'PagerDuty webhook', steps: '4/8', cost: 0.0234, duration: 12400, started: '2026-04-11T10:23:00Z' },
   { id: '01968f2a-2b3c-6def-7890-123456789abc', workflow: 'IT Incident Triage', status: 'awaiting_approval', trigger: 'PagerDuty webhook', steps: '3/8', cost: 0.0189, duration: 8200, started: '2026-04-11T10:20:00Z' },
   { id: '01968f2a-1a2b-5cde-6789-012345678abc', workflow: 'Deploy Rollback', status: 'completed', trigger: 'Manual', steps: '6/6', cost: 0.0412, duration: 45200, started: '2026-04-11T10:15:00Z' },
@@ -20,11 +20,25 @@ const MOCK_RUNS = [
   { id: '01968f29-a50b-eabc-fa12-345678901abc', workflow: 'IT Incident Triage', status: 'completed', trigger: 'PagerDuty webhook', steps: '7/8', cost: 0.0312, duration: 41200, started: '2026-04-11T08:45:00Z' },
 ];
 
-interface RunsTableProps {
-  className?: string;
+interface RunRow {
+  id: string;
+  workflow: string;
+  status: string;
+  trigger: string;
+  steps: string;
+  cost: number;
+  duration: number;
+  started: string;
+  [key: string]: unknown;
 }
 
-export function RunsTable({ className }: RunsTableProps) {
+interface RunsTableProps {
+  className?: string;
+  /** When provided, the table renders these runs instead of internal fallback data. */
+  runs?: RunRow[];
+}
+
+export function RunsTable({ className, runs }: RunsTableProps) {
   const { open: openDrawer } = useRunDrawerStore();
 
   return (
@@ -69,7 +83,7 @@ export function RunsTable({ className }: RunsTableProps) {
         </div>
 
         {/* Rows */}
-        {MOCK_RUNS.map((run) => (
+        {(runs && runs.length > 0 ? runs : FALLBACK_RUNS).map((run) => (
           <div
             key={run.id}
             className="table-row grid grid-cols-[28px_100px_1fr_140px_60px_72px_80px_100px_40px] items-center px-3"

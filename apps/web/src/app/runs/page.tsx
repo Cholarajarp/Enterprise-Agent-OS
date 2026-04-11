@@ -6,6 +6,7 @@ import { RunsTable } from '@/components/runs/RunsTable';
 import { RunDrawer } from '@/components/runs/RunDrawer';
 import { cn } from '@/lib/utils';
 import { Calendar, Filter, RotateCcw, ChevronDown } from 'lucide-react';
+import { useRuns } from '@/lib/hooks';
 
 const WORKFLOW_OPTIONS = [
   'All Workflows',
@@ -22,6 +23,17 @@ export default function RunsPage() {
   const [dateFrom, setDateFrom] = useState('2026-04-04');
   const [dateTo, setDateTo] = useState('2026-04-11');
   const [showWorkflowDropdown, setShowWorkflowDropdown] = useState(false);
+
+  // Build query params from filter state
+  const params: Record<string, string | number | undefined> = {
+    from: dateFrom,
+    to: dateTo,
+  };
+  if (selectedWorkflow !== 'All Workflows') {
+    params.workflow = selectedWorkflow;
+  }
+
+  const { runs, loading, error, refetch } = useRuns(params);
 
   return (
     <AppShell>
@@ -97,14 +109,19 @@ export default function RunsPage() {
 
         <div className="flex-1" />
 
-        <button className="btn-ghost text-xs">
+        <button className="btn-ghost text-xs" onClick={() => refetch()}>
           <RotateCcw size={12} />
           Refresh
         </button>
       </div>
 
-      {/* Runs table (reused component) */}
-      <RunsTable />
+      {/* Loading state */}
+      {loading && (
+        <div className="text-sm text-txt-3 py-12 text-center">Loading runs...</div>
+      )}
+
+      {/* Runs table (reused component) — pass live data */}
+      {!loading && <RunsTable runs={runs} />}
 
       {/* Run detail drawer (reused component) */}
       <RunDrawer />
