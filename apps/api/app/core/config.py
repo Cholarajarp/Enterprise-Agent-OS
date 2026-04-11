@@ -10,8 +10,10 @@ from typing import Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ModelProvider = Literal["anthropic", "gemini", "ollama"]
-RoutingMode = Literal["single", "hybrid"]
+ModelProvider = Literal[
+    "anthropic", "openai", "gemini", "mistral", "cohere", "groq", "together", "azure_openai", "ollama"
+]
+RoutingMode = Literal["single", "hybrid", "cost", "latency"]
 
 
 class Settings(BaseSettings):
@@ -86,6 +88,49 @@ class Settings(BaseSettings):
     GEMINI_MODEL_WORKER: str = Field(default="gemini-2.5-flash")
     GEMINI_MODEL_CLASSIFIER: str = Field(default="gemini-2.5-flash-lite")
 
+    # ── OpenAI ───────────────────────────────────────────────────────
+    OPENAI_API_KEY: str | None = Field(default=None)
+    OPENAI_BASE_URL: str = Field(default="https://api.openai.com")
+    OPENAI_MODEL_PLANNER: str = Field(default="gpt-4o")
+    OPENAI_MODEL_WORKER: str = Field(default="gpt-4o-mini")
+    OPENAI_MODEL_CLASSIFIER: str = Field(default="gpt-4o-mini")
+
+    # ── Mistral ──────────────────────────────────────────────────────
+    MISTRAL_API_KEY: str | None = Field(default=None)
+    MISTRAL_BASE_URL: str = Field(default="https://api.mistral.ai")
+    MISTRAL_MODEL_PLANNER: str = Field(default="mistral-large-latest")
+    MISTRAL_MODEL_WORKER: str = Field(default="mistral-medium-latest")
+    MISTRAL_MODEL_CLASSIFIER: str = Field(default="mistral-small-latest")
+
+    # ── Cohere ───────────────────────────────────────────────────────
+    COHERE_API_KEY: str | None = Field(default=None)
+    COHERE_BASE_URL: str = Field(default="https://api.cohere.com")
+    COHERE_MODEL_PLANNER: str = Field(default="command-r-plus")
+    COHERE_MODEL_WORKER: str = Field(default="command-r")
+    COHERE_MODEL_CLASSIFIER: str = Field(default="command-r")
+
+    # ── Groq ─────────────────────────────────────────────────────────
+    GROQ_API_KEY: str | None = Field(default=None)
+    GROQ_BASE_URL: str = Field(default="https://api.groq.com/openai")
+    GROQ_MODEL_PLANNER: str = Field(default="llama-3.3-70b-versatile")
+    GROQ_MODEL_WORKER: str = Field(default="llama-3.1-8b-instant")
+    GROQ_MODEL_CLASSIFIER: str = Field(default="llama-3.1-8b-instant")
+
+    # ── Together ─────────────────────────────────────────────────────
+    TOGETHER_API_KEY: str | None = Field(default=None)
+    TOGETHER_BASE_URL: str = Field(default="https://api.together.xyz")
+    TOGETHER_MODEL_PLANNER: str = Field(default="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo")
+    TOGETHER_MODEL_WORKER: str = Field(default="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo")
+    TOGETHER_MODEL_CLASSIFIER: str = Field(default="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo")
+
+    # ── Azure OpenAI ─────────────────────────────────────────────────
+    AZURE_OPENAI_API_KEY: str | None = Field(default=None)
+    AZURE_OPENAI_ENDPOINT: str = Field(default="")
+    AZURE_OPENAI_API_VERSION: str = Field(default="2024-06-01")
+    AZURE_OPENAI_DEPLOYMENT_PLANNER: str = Field(default="gpt-4o")
+    AZURE_OPENAI_DEPLOYMENT_WORKER: str = Field(default="gpt-4o-mini")
+    AZURE_OPENAI_DEPLOYMENT_CLASSIFIER: str = Field(default="gpt-4o-mini")
+
     # ── Ollama ───────────────────────────────────────────────────────
     OLLAMA_BASE_URL: str = Field(default="http://localhost:11434")
     OLLAMA_MODEL_PLANNER: str = Field(default="qwen3-coder")
@@ -149,17 +194,68 @@ class Settings(BaseSettings):
         """Return the concrete model name for a logical role and provider."""
 
         provider = self.model_provider_for_role(role)
-        return {
+        mapping: dict[tuple[str, str], str] = {
             ("anthropic", "planner"): self.ANTHROPIC_MODEL_PLANNER,
             ("anthropic", "worker"): self.ANTHROPIC_MODEL_WORKER,
             ("anthropic", "classifier"): self.ANTHROPIC_MODEL_CLASSIFIER,
+            ("openai", "planner"): self.OPENAI_MODEL_PLANNER,
+            ("openai", "worker"): self.OPENAI_MODEL_WORKER,
+            ("openai", "classifier"): self.OPENAI_MODEL_CLASSIFIER,
             ("gemini", "planner"): self.GEMINI_MODEL_PLANNER,
             ("gemini", "worker"): self.GEMINI_MODEL_WORKER,
             ("gemini", "classifier"): self.GEMINI_MODEL_CLASSIFIER,
+            ("mistral", "planner"): self.MISTRAL_MODEL_PLANNER,
+            ("mistral", "worker"): self.MISTRAL_MODEL_WORKER,
+            ("mistral", "classifier"): self.MISTRAL_MODEL_CLASSIFIER,
+            ("cohere", "planner"): self.COHERE_MODEL_PLANNER,
+            ("cohere", "worker"): self.COHERE_MODEL_WORKER,
+            ("cohere", "classifier"): self.COHERE_MODEL_CLASSIFIER,
+            ("groq", "planner"): self.GROQ_MODEL_PLANNER,
+            ("groq", "worker"): self.GROQ_MODEL_WORKER,
+            ("groq", "classifier"): self.GROQ_MODEL_CLASSIFIER,
+            ("together", "planner"): self.TOGETHER_MODEL_PLANNER,
+            ("together", "worker"): self.TOGETHER_MODEL_WORKER,
+            ("together", "classifier"): self.TOGETHER_MODEL_CLASSIFIER,
+            ("azure_openai", "planner"): self.AZURE_OPENAI_DEPLOYMENT_PLANNER,
+            ("azure_openai", "worker"): self.AZURE_OPENAI_DEPLOYMENT_WORKER,
+            ("azure_openai", "classifier"): self.AZURE_OPENAI_DEPLOYMENT_CLASSIFIER,
             ("ollama", "planner"): self.OLLAMA_MODEL_PLANNER,
             ("ollama", "worker"): self.OLLAMA_MODEL_WORKER,
             ("ollama", "classifier"): self.OLLAMA_MODEL_CLASSIFIER,
-        }[(provider, role)]
+        }
+        return mapping[(provider, role)]
+
+    def base_url_for_provider(self, provider: ModelProvider) -> str:
+        """Resolve the base URL for a provider."""
+
+        urls: dict[str, str] = {
+            "anthropic": self.ANTHROPIC_BASE_URL,
+            "openai": self.OPENAI_BASE_URL,
+            "gemini": self.GEMINI_BASE_URL,
+            "mistral": self.MISTRAL_BASE_URL,
+            "cohere": self.COHERE_BASE_URL,
+            "groq": self.GROQ_BASE_URL,
+            "together": self.TOGETHER_BASE_URL,
+            "azure_openai": self.AZURE_OPENAI_ENDPOINT,
+            "ollama": self.OLLAMA_BASE_URL,
+        }
+        return urls[provider]
+
+    def api_key_for_provider(self, provider: ModelProvider) -> str | None:
+        """Resolve the configured credential for a provider."""
+
+        keys: dict[str, str | None] = {
+            "anthropic": self.ANTHROPIC_API_KEY,
+            "openai": self.OPENAI_API_KEY,
+            "gemini": self.GEMINI_API_KEY,
+            "mistral": self.MISTRAL_API_KEY,
+            "cohere": self.COHERE_API_KEY,
+            "groq": self.GROQ_API_KEY,
+            "together": self.TOGETHER_API_KEY,
+            "azure_openai": self.AZURE_OPENAI_API_KEY,
+            "ollama": self.OLLAMA_API_KEY,
+        }
+        return keys[provider]
 
 
 # Singleton — import this throughout the application.
