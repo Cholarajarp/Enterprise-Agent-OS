@@ -85,12 +85,30 @@ services:
       retries: 5
 
   # ─── Application Services ──────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      api:
+        condition: service_started
+    profiles: ["full"]
+
   api:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     environment:
       DATABASE_URL: postgresql+asyncpg://agent_os:agent_os_dev@postgres:5432/agent_os
       REDIS_URL: redis://redis:6379/0
