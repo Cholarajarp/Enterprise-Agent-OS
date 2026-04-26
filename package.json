@@ -2,11 +2,11 @@
   "name": "enterprise-agent-os",
   "private": true,
   "scripts": {
-    "dev": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo dev",
-    "build": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo build",
-    "lint": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo lint",
-    "type-check": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo type-check",
-    "test": "set PATH=%CD%;%PATH% && corepack pnpm exec turbo test",
+    "dev": "corepack pnpm exec turbo dev",
+    "build": "corepack pnpm exec turbo build",
+    "lint": "corepack pnpm exec turbo lint",
+    "type-check": "corepack pnpm exec turbo type-check",
+    "test": "corepack pnpm exec turbo test",
     "verify": "corepack pnpm -r build && corepack pnpm -r type-check",
     "db:migrate": "cd apps/api && py -m alembic upgrade head",
     "db:generate": "cd apps/api && py -m alembic revision --autogenerate"

@@ -110,6 +110,7 @@ func TestEvaluateBlockedToolOutOfScope(t *testing.T) {
 	})
 
 	req := toolRequest("k8s:delete_namespace", map[string]interface{}{"namespace": "production"})
+	req.Scopes = []string{"k8s:delete_namespace"}
 	resp, err := p.Evaluate(context.Background(), "wf-1", req, false)
 	if err != nil {
 		t.Fatalf("Evaluate error: %v", err)
@@ -206,6 +207,7 @@ func TestLoadPolicyOverridesExisting(t *testing.T) {
 	})
 
 	req := toolRequest("jira:create_issue", map[string]interface{}{"summary": "test"})
+	req.Scopes = []string{"jira:create_issue"}
 	resp, _ := p.Evaluate(context.Background(), "wf-override", req, false)
 	if resp.Allowed {
 		t.Error("expected jira blocked before policy update")

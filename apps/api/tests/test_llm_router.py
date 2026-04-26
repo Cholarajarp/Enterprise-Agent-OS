@@ -2,7 +2,8 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 
-from app.services.llm import LLMRouter, LLMResult, COST_TABLE
+from app.services.llm import LLMRouter, LLMResult
+from app.services.llm import COST_TABLE
 
 
 def test_cost_table_has_entries():
@@ -26,17 +27,17 @@ def test_cost_table_covers_gemini():
 
 def test_llm_result_fields():
     result = LLMResult(
+        provider="anthropic",
         content="Hello world",
         model="claude-opus-4-6",
-        input_tokens=10,
-        output_tokens=5,
+        usage={"input_tokens": 10, "output_tokens": 5},
         tool_calls=[],
         cost_usd=0.0012,
         latency_ms=250,
     )
     assert result.content == "Hello world"
-    assert result.input_tokens == 10
-    assert result.output_tokens == 5
+    assert result.usage.input_tokens == 10
+    assert result.usage.output_tokens == 5
     assert result.cost_usd == 0.0012
     assert result.latency_ms == 250
     assert result.tool_calls == []
