@@ -168,7 +168,7 @@ export function CommandPalette() {
           ))}
           {filteredGroups.length === 0 && (
             <div className="px-3 py-6 text-sm text-txt-3">
-              No results for "{query}".
+              No results for &quot;{query}&quot;.
             </div>
           )}
         </div>

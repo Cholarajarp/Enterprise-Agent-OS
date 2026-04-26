@@ -29,31 +29,28 @@ def test_run_constraints_custom():
 
 def test_loop_detector_no_loop_with_different_states():
     detector = LoopDetector()
-    detector.record("alpha")
-    detector.record("beta")
-    detector.record("gamma")
-    detector.record("delta")
-    assert not detector.is_looping()
+    assert not detector.check({"state": "alpha"})
+    assert not detector.check({"state": "beta"})
+    assert not detector.check({"state": "gamma"})
+    assert not detector.check({"state": "delta"})
 
 
 def test_loop_detector_detects_repeated_state():
     detector = LoopDetector(threshold=3)
-    for _ in range(6):
-        detector.record("stuck_state")
-    assert detector.is_looping()
+    for _ in range(2):
+        assert not detector.check({"state": "stuck_state"})
+    assert detector.check({"state": "stuck_state"})
 
 
 def test_loop_detector_threshold_one():
     detector = LoopDetector(threshold=1)
-    detector.record("state_a")
-    detector.record("state_a")
-    assert detector.is_looping()
+    assert detector.check({"state": "state_a"})
 
 
 def test_loop_detector_reset():
     detector = LoopDetector(threshold=3)
-    for _ in range(4):
-        detector.record("same")
-    assert detector.is_looping()
-    detector.reset()
-    assert not detector.is_looping()
+    for _ in range(2):
+        assert not detector.check({"state": "same"})
+    assert detector.check({"state": "same"})
+    detector._hashes = []
+    assert not detector.check({"state": "same"})

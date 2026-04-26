@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/agent-os/governance-proxy/pkg/models"
 )
@@ -14,6 +15,7 @@ import (
 // Enforcer checks tool calls against scope policies.
 type Enforcer struct {
 	policies map[string]*models.ScopePolicy
+	mu       sync.RWMutex
 }
 
 // NewEnforcer creates a scope enforcer with the given policies.
@@ -25,13 +27,17 @@ func NewEnforcer() *Enforcer {
 
 // LoadPolicy registers a scope policy for a workflow.
 func (e *Enforcer) LoadPolicy(policy *models.ScopePolicy) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	e.policies[policy.WorkflowID] = policy
 }
 
 // Check evaluates whether a tool call is within the workflow's allowed scopes.
 // Returns nil if allowed, error with details if blocked.
 func (e *Enforcer) Check(ctx context.Context, workflowID string, req *models.ToolCallRequest) error {
+	e.mu.RLock()
 	policy, exists := e.policies[workflowID]
+	e.mu.RUnlock()
 	if !exists {
 		return fmt.Errorf("scope_violation: no policy found for workflow %s", workflowID)
 	}
